@@ -18,4 +18,7 @@ export PacketSender :: *;
 import BlueLibFIFO :: *;
 export BlueLibFIFO :: *;
 
+import BlueLibXilinxPrimitives :: *;
+export BlueLibXilinxPrimitives :: *;
+
 endpackage
