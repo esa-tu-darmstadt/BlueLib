@@ -7,7 +7,7 @@ package Assertions;
         provisos (Bits#(t, sz_t), Eq#(t), FShow#(t));
         action
             if(expected != actual) begin
-                printColorTimed(RED, $format("Assertion failed: ") + additional_info + $format("\nExpected: ") + fshow(expected) + $format(", got ") + fshow(actual));
+                printColorTimed(RED, $format("ERROR: Assertion failed: ") + additional_info + $format("\nExpected: ") + fshow(expected) + $format(", got ") + fshow(actual));
                 bad_exit(-1);
             end
         endaction
@@ -16,7 +16,7 @@ package Assertions;
     function Action assertTrue(Bool exp, Fmt additional_info);
         action
             if(!exp) begin
-                printColorTimed(RED, $format("Assertion failed: ") + additional_info);
+                printColorTimed(RED, $format("ERROR: Assertion failed: ") + additional_info);
                 bad_exit(-1);
             end
         endaction
@@ -25,7 +25,7 @@ package Assertions;
     function Action assertFalse(Bool exp, Fmt additional_info);
         action
             if(exp) begin
-                printColorTimed(RED, $format("Assertion failed: ") + additional_info);
+                printColorTimed(RED, $format("ERROR: Assertion failed: ") + additional_info);
                 bad_exit(-1);
             end
         endaction
