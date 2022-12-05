@@ -2,5 +2,6 @@ MAKEPATH := $(dir $(lastword $(MAKEFILE_LIST)))
 MODULENAME := BlueLib
 MODULEPATH := $(MAKEPATH)src
 EXTRA_BSV_LIBS += $(MODULEPATH)
+C_FILES += $(wildcard $(MODULEPATH)/BDPI/*.c)
 
 $(info Adding $(MODULENAME) from $(MODULEPATH))
