@@ -51,7 +51,7 @@ function Action debug(LoggingLevel log, Fmt message);
             
             if (log != L_ERROR)
                 printColor(color, fshow(log) + $format(": ") + fshow(message));
-            else (log == L_ERROR)
+            else
                 assertTrue(False, fshow(message));
         end
     endaction
