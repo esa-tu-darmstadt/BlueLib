@@ -7,11 +7,6 @@ import BuildVector :: *;
 import BlueLibTests :: *;
 import Assertions :: *;
 
-`ifdef FLAG_LOG_TYPES
-typedef `FLAG_LOG_TYPES         FLAG_LOG_TYPES;
-`else 
-typedef "L_WARNING, L_ERROR"    FLAG_LOG_TYPES;
-`endif
 
 typedef enum {
     L_WARNING,
@@ -23,7 +18,7 @@ typedef enum {
 } LoggingLevel deriving (Bits, Eq, FShow);
 
 Bool verbose = False;
-typedef 13 N_LOG_TYPES;
+typedef 6 N_LOG_TYPES;
 
 // Returns a one-hot-encoded LoggingLevel Bit vector
 function Bit#(N_LOG_TYPES) oneHotLog(LoggingLevel level);
@@ -32,8 +27,11 @@ endfunction
 
 function Action debug(LoggingLevel log, Fmt message);
     action
-        // Getting a vector from macros
-        let v_log_config = vec(FLAG_LOG_TYPES);
+        `ifdef FLAG_LOG_TYPES
+        let v_log_config = vec(`FLAG_LOG_TYPES);
+        `else 
+        let v_log_config = vec(L_WARNING, L_ERROR);
+        `endif
         let log_config_1hot = map(oneHotLog, v_log_config);
         // Bit vector encoding the state of log config
         Bit#(N_LOG_TYPES) log_config = fold(\| , log_config_1hot);
@@ -51,11 +49,9 @@ function Action debug(LoggingLevel log, Fmt message);
             else
                 color = BLUE;
             
-            if (log == L_TB_NORMAL || log == L_TB_BLUE || log == L_TB_YELLOW || log == L_TB_GREEN)
-                printColor(color, fshow(message));
-            else if (log != L_ERROR)
+            if (log != L_ERROR)
                 printColor(color, fshow(log) + $format(": ") + fshow(message));
-            else if (log == L_ERROR)
+            else (log == L_ERROR)
                 assertTrue(False, fshow(message));
         end
     endaction
