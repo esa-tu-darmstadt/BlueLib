@@ -25,6 +25,12 @@ Example:
 ```
 log(TESTBENCH, INFO, $format("My log message %x", value));
 ```
+Example Message:
+```
+(100) [INFO]{TESTBENCH} My log message: 10
+// (timestamp) [level]{unit} message
+// different colors are used based on the level
+```
 
 ## Runtime
 
