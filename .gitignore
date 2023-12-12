@@ -1,2 +1,4 @@
 # Ignore C objects after compilation of C code
 src/BDPI/*.o
+BlueLogging.mk
+src/LogUnit.bsv
