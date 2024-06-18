@@ -1,10 +1,6 @@
 package Logging;
 
 import BlueLib :: *;
-import LogUnit :: *;
-
-export LogUnit :: *;
-export Logging :: *;
 
 typedef enum {
 	ERROR = 0,
@@ -13,9 +9,9 @@ typedef enum {
 	DEBUG = 3
 } LogLevel deriving(Eq,Bits,FShow);
 
-function ActionValue#(Bool) checkLogging(LogLevel level, LogUnit unit);
+function ActionValue#(Bool) checkLogging(LogLevel level);
 	return actionvalue
-		let l <- getLogLevel(logUnitToString(unit));
+		let l <- getLevel();
 		return pack(level) <= pack(l);
 	endactionvalue;
 endfunction
@@ -24,17 +20,27 @@ function DisplayColors getColor(LogLevel level);
 	if (level == ERROR) return RED;
 	else if (level == WARN) return YELLOW;
 	else if (level == INFO) return GREEN;
-	else return BLUE;
+	else return NORMAL;
 endfunction
 
-function Action log(LogUnit unit, LogLevel level, Fmt text);
+function Action log(LogLevel level, Fmt text);
 	action
-		let test <- checkLogging(level, unit);
-		if (test) printColorTimed(getColor(level), $format("[", fshow(level), fshow("]{"), logUnitToString(unit), fshow("} "), fshow(text)));
+		let unit = genModuleName();
+		let test <- checkLogging(level);
+		if (test) printColorTimed(getColor(level), $format("[", fshow(level), fshow("]{"), unit, fshow("} "), fshow(text)));
 	endaction
 endfunction
 
-function ActionValue#(LogLevel) getLogLevel(String unit);
+function ActionValue#(LogLevel) getLevel();
+	return actionvalue
+		let global <- getLogLevelDefault;
+		let file <- getLogLevel(genPackageName(), global);
+		let unit <- getLogLevel(genModuleName(), file);
+		return unit;
+	endactionvalue;
+endfunction
+
+function ActionValue#(LogLevel) getLogLevel(String unit, LogLevel defaultValue);
 	return actionvalue
 		let debug <- $test$plusargs("LOG_" + unit + "=DEBUG");
 		let info <- $test$plusargs("LOG_" + unit + "=INFO");
@@ -49,17 +55,16 @@ function ActionValue#(LogLevel) getLogLevel(String unit);
 		else if (error)
 			return ERROR;
 		else begin
-			let d <- getLogLevelDefault();
-			return d;
+			return defaultValue;
 		end
 	endactionvalue;
 endfunction
 
 function ActionValue#(LogLevel) getLogLevelDefault();
 	return actionvalue
-		let debug <- $test$plusargs("LOG=DEBUG");
-		let info <- $test$plusargs("LOG=INFO");
-		let warn <- $test$plusargs("LOG=WARN");
+		let debug <- $test$plusargs("LOG_GLOBAL=DEBUG");
+		let info <- $test$plusargs("LOG_GLOBAL=INFO");
+		let warn <- $test$plusargs("LOG_GLOBAL=WARN");
 		if (debug)
 			return DEBUG;
 		else if (info)
