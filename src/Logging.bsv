@@ -2,6 +2,16 @@ package Logging;
 
 import BlueLib :: *;
 
+interface Logger;
+	method Action log(LogLevel level, Fmt txt);
+endinterface
+
+module mkLogger#(String unit)(Logger);
+	method Action log(LogLevel level, Fmt txt);
+		sendMessage(unit, unit, level, txt);
+	endmethod
+endmodule
+
 typedef enum {
 	ERROR = 0,
 	WARN = 1,
@@ -9,9 +19,9 @@ typedef enum {
 	DEBUG = 3
 } LogLevel deriving(Eq,Bits,FShow);
 
-function ActionValue#(Bool) checkLogging(LogLevel level);
+function ActionValue#(Bool) checkLogging(String moduleName, String packageName, LogLevel level);
 	return actionvalue
-		let l <- getLevel();
+		let l <- getLevel(moduleName, packageName);
 		return pack(level) <= pack(l);
 	endactionvalue;
 endfunction
@@ -25,17 +35,22 @@ endfunction
 
 function Action log(LogLevel level, Fmt text);
 	action
-		let unit = genModuleName();
-		let test <- checkLogging(level);
-		if (test) printColorTimed(getColor(level), $format("[", fshow(level), fshow("]{"), unit, fshow("} "), fshow(text)));
+		sendMessage(genModuleName(), genPackageName(), level, text);
 	endaction
 endfunction
 
-function ActionValue#(LogLevel) getLevel();
+function Action sendMessage(String moduleName, String packageName, LogLevel level, Fmt text);
+	action
+		let test <- checkLogging(moduleName, packageName, level);
+		if (test) printColorTimed(getColor(level), $format("[", fshow(level), fshow("]{"), moduleName, fshow("} "), fshow(text)));
+	endaction
+endfunction
+
+function ActionValue#(LogLevel) getLevel(String moduleName, String packageName);
 	return actionvalue
 		let global <- getLogLevelDefault;
-		let file <- getLogLevel(genPackageName(), global);
-		let unit <- getLogLevel(genModuleName(), file);
+		let file <- getLogLevel(packageName, global);
+		let unit <- getLogLevel(moduleName, file);
 		return unit;
 	endactionvalue;
 endfunction
