@@ -3,6 +3,11 @@
 This provides a function `log(...)` which allows to display log messages in a simulation (both BlueSim and Verilog).
 All Log messages have a *level* and. Runtime parameters define log messages of which level are displayed, either for a module, all modules in a package or globally.
 
+## Limitations
+
+The `log` function does not work well with in not directly synthesized modules: The module and package name, which are used to determine whether to display the message, are always taken from module being synthesized (and not from the module where the function is used).
+When this presents an alternative based on "Logger Modules" is available. For Details see [below](#Alternative).
+
 ## Usage
 
 The package `Logging` has to be imported where logging should be used.
@@ -31,5 +36,25 @@ By default only `ERROR` messages are shown. To change this, you can add paramete
 
 Example:
 ```
-make LOG="GLOBAL_WARN MyPackage=INFO myModule=DEBUG"
+make LOG="GLOBAL=WARN MyPackage=INFO myModule=DEBUG"
 ```
+
+## Alternative
+
+With this alternative approach it is possible to explicitly specify the string being used to determine whether a log message should be displayed (the "log unit").
+This is specified by instantiating a module `mkLogger(String)` which provides a single method `log(LogLevel,Fmt)` (the method has the same parameters as the `log` function detailed above).
+
+Example:
+```
+Logger log <- mkLogger("MyLogger");
+```
+
+Specifying at runtime which messages should be displayed works similarly as before (see [Runtime](#Runtime)), but instead of the module or package name you need to use the string given to your logger module.
+
+Example:
+```
+make LOG="GLOBAL=WARN MyLogger=DEBUG"
+```
+
+Note: The `GLOBAL` option also works here.
+It is also possible to freely combine both approaches.
