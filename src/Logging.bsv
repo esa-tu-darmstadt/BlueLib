@@ -8,7 +8,9 @@ endinterface
 
 module mkLogger#(String unit)(Logger);
 	method Action log(LogLevel level, Fmt txt);
-		sendMessage(unit, unit, level, txt);
+		`ifndef NOLOG
+			sendMessage(unit, unit, level, txt);
+		`endif
 	endmethod
 endmodule
 
@@ -41,8 +43,10 @@ endfunction
 
 function Action sendMessage(String moduleName, String packageName, LogLevel level, Fmt text);
 	action
-		let test <- checkLogging(moduleName, packageName, level);
-		if (test) printColorTimed(getColor(level), $format("[", fshow(level), fshow("]{"), moduleName, fshow("} "), fshow(text)));
+		`ifndef NOLOG
+			let test <- checkLogging(moduleName, packageName, level);
+			if (test) printColorTimed(getColor(level), $format("[", fshow(level), fshow("]{"), moduleName, fshow("} "), fshow(text)));
+		`endif
 	endaction
 endfunction
 
