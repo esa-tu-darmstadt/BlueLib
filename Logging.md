@@ -39,6 +39,11 @@ Example:
 make LOG="GLOBAL=WARN MyPackage=INFO myModule=DEBUG"
 ```
 
+## Disable
+
+Logging can be completely disabled via `make NOLOG=1`, this will remove all Logging-related stuff from the generated verilog.
+This is recommended when building for hardware, as otherwise the output of the Synthesis tool will be cluttered with messages.
+
 ## Alternative
 
 With this alternative approach it is possible to explicitly specify the string being used to determine whether a log message should be displayed (the "log unit").
