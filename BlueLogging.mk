@@ -5,3 +5,5 @@ endif
 ifneq ($(NOLOG),)
 	EXTRA_FLAGS+=-D NOLOG=1
 endif
+
+REBUILD_LIBRARIES+=Logging
