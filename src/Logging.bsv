@@ -8,7 +8,9 @@ endinterface
 
 module mkLogger#(String unit)(Logger);
 	method Action log(LogLevel level, Fmt txt);
-		sendMessage(unit, unit, level, txt);
+		`ifndef NOLOG
+			sendMessage(unit, unit, level, txt);
+		`endif
 	endmethod
 endmodule
 
