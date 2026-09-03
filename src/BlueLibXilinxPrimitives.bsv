@@ -2,6 +2,10 @@ package BlueLibXilinxPrimitives;
 
 import Clocks::*;
 import Vector::*;
+import BRAM::*;
+import GetPut::*;
+import ClientServer::*;
+import List::*;
 
 // Provides:
 // mkDNA_PORTE2
@@ -167,6 +171,122 @@ endmodule
 module mkICAPE3(ICAPE3_Ifc);
 	let _m <- vMkICAPE3;
 	return _m;
+endmodule
+
+// Xilinx Parametrizable Macros for memory
+typedef enum {AUTO, BRAM, URAM, DISTRIBUTED, MIXED} XilinxMemoryPrimitive deriving (Bits, Eq, Bounded);
+
+instance DefaultValue#(XilinxMemoryPrimitive);
+    defaultValue = AUTO;
+endinstance
+
+function String xilinxMemPrimitiveToString(XilinxMemoryPrimitive x);
+    case (x)
+        AUTO:         return "auto";
+        BRAM:         return "block";
+        URAM:         return "ultra";
+        DISTRIBUTED:  return "distributed";
+        MIXED:        return "mixed";
+    endcase
+endfunction
+
+typedef union tagged {
+    void   None;
+    String File;
+} MemoryInitFile deriving (Eq);
+
+instance DefaultValue#(MemoryInitFile);
+    defaultValue = tagged None;
+endinstance
+
+typedef struct {
+    XilinxMemoryPrimitive memType;
+    Integer               memSizeWords;
+    Integer               readLatency;
+    MemoryInitFile        memoryInitFile;
+} XPMMemConfig;
+
+
+(* always_ready, always_enabled *)
+interface XPM_SPRAM_Ifc#(numeric type addr_w, numeric type data_w);
+    method Action addra(Bit#(addr_w) addr);
+    method Action dina(Bit#(data_w) data);
+    method Bit#(data_w) douta();
+endinterface
+
+import "BVI" xpm_memory_spram =
+module vMkXPMSPRAM#(XPMMemConfig cfg)(XPM_SPRAM_Ifc#(addr_w, data_w));
+    // Create an active high reset signal
+    ReadOnly#(Bool) resetPositive <- isResetAsserted;
+    port rsta = resetPositive;
+    no_reset; // do not use implicity reset
+
+    // Set clock port name
+    default_clock clk(clka);
+
+    parameter ADDR_WIDTH_A = valueOf(addr_w);
+    parameter BYTE_WRITE_WIDTH_A = valueOf(data_w); // Set to data_w for word-enabld writes or 8 for byte enabled writes
+    parameter MEMORY_PRIMITIVE = xilinxMemPrimitiveToString(cfg.memType);
+    parameter MEMORY_SIZE = cfg.memSizeWords;
+    parameter READ_DATA_WIDTH_A = valueOf(data_w);
+    parameter READ_LATENCY_A = cfg.readLatency;
+    parameter READ_RESET_VALUE_A = "0";
+    parameter WRITE_DATA_WIDTH_A = valueOf(data_w);
+    parameter MEMORY_INIT_PARAM = "";
+    parameter MEMORY_INIT_FILE = case (cfg.memoryInitFile) matches
+                                    tagged None: "none";
+                                    tagged File .filename: filename;
+                                endcase;
+
+    // Permanently disable sleep and enable output register
+    port sleep = 1'b0;
+    port regcea = 1'b1;
+
+    // Set address and enable
+    method addra(addra) enable (ena);
+    // Set data in and write enable
+    method dina(dina) enable (wea);
+    // Get output data (always ready)
+    method douta douta();
+
+    schedule (addra) SB (dina);
+    schedule (douta) CF (addra, dina);
+endmodule
+
+
+module mkSPRAM#(XPMMemConfig memconfig)(BRAMServer#(Bit#(addr_w), Bit#(data_w)));
+
+    XPM_SPRAM_Ifc#(addr_w, data_w) ram <- vMkXPMSPRAM(memconfig);
+
+    // Track read requests to return data after the appropriate latency
+    List#(Reg#(Bool)) request_legal <- List::replicateM(memconfig.readLatency, mkRegU);
+    Wire#(Bool) read_request <- mkDWire(False);
+
+    (* no_implicit_conditions *)
+    rule propagate_request_legal;
+        for (Integer i = memconfig.readLatency - 1; i > 0; i = i - 1) begin
+            request_legal[i] <= request_legal[i - 1];
+        end
+        request_legal[0] <= read_request;
+    endrule
+
+    
+    interface Get response;
+        method ActionValue#(Bit#(data_w)) get() if (request_legal[memconfig.readLatency - 1]);
+            return ram.douta();
+        endmethod
+    endinterface
+
+    interface Put request;
+        method Action put(BRAMRequest#(Bit#(addr_w), Bit#(data_w)) rq);
+            ram.addra(rq.address);
+            if (rq.write) begin
+                ram.dina(rq.datain);
+            end else begin
+                read_request <= True;
+            end
+        endmethod
+    endinterface
 endmodule
 
 endpackage
