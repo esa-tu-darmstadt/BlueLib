@@ -8,7 +8,7 @@ import Vector :: *;
 import AXI4_Stream :: *;
 
 interface PktParser#(type streamWidth, type pktType);
-    interface Put#(AXI4_Stream_Pkg#(streamWidth, 0)) pktStream;
+    interface Put#(AXI4_Stream_Pkg#(streamWidth, 0, 8, 4)) pktStream;
     method Action resetProcessing();
     interface Get#(Bit#(streamWidth)) sideband;
     interface Get#(Tuple2#(Bit#(streamWidth), Bool)) sidebandIsLast;
@@ -51,7 +51,7 @@ module mkPktParser#(List#(PktParserStages#(pktType)) parserStages)(PktParser#(st
         Mul#(streamWidth, wordsInPkt, pktType_sz)
         );
 
-    FIFO#(AXI4_Stream_Pkg#(streamWidth, 0)) pktsIn <- mkFIFO();
+    FIFO#(AXI4_Stream_Pkg#(streamWidth, 0, 8, 4)) pktsIn <- mkFIFO();
 
     FIFO#(Tuple2#(Bit#(streamWidth), Bool)) outputFIFO <- mkFIFO();
 

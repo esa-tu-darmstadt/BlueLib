@@ -7,7 +7,7 @@ import ClientServer :: *;
 
 import AXI4_Stream :: *;
 
-module mkVecSend(Server#(Vector#(a, b), AXI4_Stream_Pkg#(b_sz, user)))
+module mkVecSend(Server#(Vector#(a, b), AXI4_Stream_Pkg#(b_sz, user, id, dest)))
     provisos(Bits#(b, b_sz),
              Add#(1, a, a_p1),
              Log#(a_p1, a_addr),
@@ -36,7 +36,7 @@ module mkVecSend(Server#(Vector#(a, b), AXI4_Stream_Pkg#(b_sz, user)))
     endinterface
 
     interface Get response;
-        method ActionValue#(AXI4_Stream_Pkg#(b_sz, user)) get() if(wordCntr[0] != totalWords);
+        method ActionValue#(AXI4_Stream_Pkg#(b_sz, user, id, dest)) get() if(wordCntr[0] != totalWords);
             let data = 0;
             if(wordCntr[0] < fromInteger(valueOf(a))) begin
                 data = pack(readBufferReg[0][wordCntr[0]]);
